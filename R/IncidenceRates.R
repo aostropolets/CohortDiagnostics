@@ -82,6 +82,8 @@ getIncidenceRate <- function(connectionDetails = NULL,
                                                              snakeCaseToCamelCase = TRUE) %>% 
     tidyr::tibble()
   
+  write.csv2(ratesSummary, "ir_summary.csv")
+  
   sql <- "TRUNCATE TABLE #rates_summary; DROP TABLE #rates_summary;"
   DatabaseConnector::renderTranslateExecuteSql(connection = connection,
                                                sql = sql,
@@ -90,6 +92,7 @@ getIncidenceRate <- function(connectionDetails = NULL,
                                                oracleTempSchema = oracleTempSchema)
   
   irYearAgeGender <- recode(ratesSummary)
+  
   irOverall <- tidyr::tibble(cohortCount = sum(irYearAgeGender$cohortCount),
                              personYears = sum(irYearAgeGender$personYears))
   irGender <- aggregateIr(irYearAgeGender, list(gender = irYearAgeGender$gender))
@@ -101,6 +104,9 @@ getIncidenceRate <- function(connectionDetails = NULL,
                                                  ageGroup = irYearAgeGender$ageGroup))
   irYearGender <- aggregateIr(irYearAgeGender, list(calendarYear = irYearAgeGender$calendarYear,
                                                     gender = irYearAgeGender$gender))
+  
+  
+  
   result <- dplyr::bind_rows(irOverall,
                              irGender,
                              irAge,

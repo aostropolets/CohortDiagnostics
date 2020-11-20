@@ -236,13 +236,17 @@ plotIncidenceRate <- function(data,
   }
   
   
-  plot <- ggplot2::ggplot(data = plotData, 
+  plot <- 
+    plotData %>%
+    arrange(category) %>%
+    ggplot2::ggplot(data = plotData, 
                           do.call(ggplot2::aes_string, aesthetics)) +
     ggplot2::xlab(xLabel) +
     ggplot2::ylab("Incidence Rate (/1,000 person years)") +
     ggplot2::theme(legend.position = "top",
                    legend.title = ggplot2::element_blank(),
-                   axis.text.x = if (showX) ggplot2::element_text(angle = 90, vjust = 0.5) else ggplot2::element_blank() )
+                   axis.text.x = if (showX) ggplot2::element_text(angle = 90, vjust = 0.5) else ggplot2::element_blank() ) +
+    facet_wrap(~category,  scales = "free")  
   
   if (plotType == "line") {
     plot <- plot + 

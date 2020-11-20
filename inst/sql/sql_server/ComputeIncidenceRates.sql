@@ -6,6 +6,13 @@
 {DEFAULT @cohort_id = 5665}
 
 
+-- XXX: race
+-- 1. Yearly rates: Just numerator
+-- 2. Yearly rates: Numerator + all patients in db
+-- 3. Yearly rates: Numerator + all patients with a visit
+-- 4. Yearly rates: Numerator + all patients with hosp/ED visit
+-- 5. Monthly rates
+
 IF OBJECT_ID('tempdb..#numerator', 'U') IS NOT NULL
   DROP TABLE #numerator;
 
@@ -41,10 +48,13 @@ GROUP BY YEAR(cohort_start_date),
 IF OBJECT_ID('tempdb..#denominator', 'U') IS NOT NULL
   DROP TABLE #denominator;
 
+-- all patients
 SELECT calendar_year,
 	age_group,
 	gender_concept_id,
-	SUM(CAST(DATEDIFF(DAY, start_date, end_date) AS BIGINT)) / 365.25 AS person_years
+--	race_concept_id,
+	SUM(CAST(DATEDIFF(DAY, start_date, end_date) AS BIGINT)) / 365.25 AS person_years,
+	'all_pts' as category
 INTO #denominator
 FROM (
 {@first_occurrence_only} ? {
@@ -103,25 +113,211 @@ GROUP BY calendar_year,
 	age_group,
 	gender_concept_id;
 
+
+INSERT INTO #denominator
+-- all pts with a visit
+SELECT calendar_year,
+	age_group,
+	gender_concept_id,
+--	race_concept_id,
+	SUM(CAST(DATEDIFF(DAY, start_date, end_date) AS BIGINT)) / 365.25 AS person_years,
+	'visit' as category
+FROM (
+{@first_occurrence_only} ? {
+	SELECT calendar_year,
+		age_group,
+		gender_concept_id,
+		CASE
+			WHEN cohort_start_date IS NOT NULL THEN 
+				CASE
+					WHEN cohort_start_date < start_date THEN end_date
+					ELSE cohort_start_date
+				END
+			ELSE start_date
+		END AS start_date,
+		end_date
+	FROM (
+}
+		SELECT person.person_id,
+			calendar_year,
+			FLOOR((calendar_year - year_of_birth) / 10) AS age_group,
+			gender_concept_id,
+			CASE 
+				WHEN observation_period_start_date > DATEFROMPARTS(calendar_year, 1, 1) THEN observation_period_start_date
+				ELSE DATEFROMPARTS(calendar_year, 1, 1)
+			END AS start_date,
+			CASE 
+				WHEN observation_period_end_date < DATEFROMPARTS(calendar_year + 1, 1, 1) THEN observation_period_end_date
+				ELSE DATEFROMPARTS(calendar_year + 1, 1, 1)
+			END AS end_date
+		FROM (
+			SELECT person_id,
+				DATEADD(DAY, @washout_period, observation_period_start_date) AS observation_period_start_date,
+				observation_period_end_date
+			FROM @cdm_database_schema.observation_period o
+			WHERE DATEADD(DAY, @washout_period, observation_period_start_date) < observation_period_end_date
+		) trunc_op
+		INNER JOIN 	#calendar_years
+			ON YEAR(observation_period_start_date) <= calendar_year
+				AND YEAR(observation_period_end_date) >= calendar_year
+		INNER JOIN @cdm_database_schema.person
+			ON trunc_op.person_id = person.person_id
+		INNER JOIN @cdm_database_schema.visit_occurrence visit 
+		    ON visit.person_id = person.person_id AND YEAR(visit_start_date) = calendar_year -- any visit exists in that year
+{@first_occurrence_only} ? {
+		) time_spans_1
+	LEFT JOIN (
+		SELECT subject_id,
+			MIN(cohort_start_date) AS cohort_start_date
+		FROM @cohort_database_schema.@cohort_table
+		WHERE cohort_definition_id = @cohort_id
+		GROUP BY subject_id
+		) cohort
+	ON subject_id = person_id
+		AND cohort_start_date < end_date
+}
+	) time_spans_2
+GROUP BY calendar_year,
+	age_group,
+	gender_concept_id;
+
+
+
+INSERT INTO #denominator
+-- all pts with a visit
+-- all patients
+SELECT calendar_year,
+	age_group,
+	gender_concept_id,
+--	race_concept_id,
+	SUM(CAST(DATEDIFF(DAY, start_date, end_date) AS BIGINT)) / 365.25 AS person_years,
+	'hosp_ed' as category
+FROM (
+{@first_occurrence_only} ? {
+	SELECT calendar_year,
+		age_group,
+		gender_concept_id,
+		CASE
+			WHEN cohort_start_date IS NOT NULL THEN 
+				CASE
+					WHEN cohort_start_date < start_date THEN end_date
+					ELSE cohort_start_date
+				END
+			ELSE start_date
+		END AS start_date,
+		end_date
+	FROM (
+}
+		SELECT person.person_id,
+			calendar_year,
+			FLOOR((calendar_year - year_of_birth) / 10) AS age_group,
+			gender_concept_id,
+			CASE 
+				WHEN observation_period_start_date > DATEFROMPARTS(calendar_year, 1, 1) THEN observation_period_start_date
+				ELSE DATEFROMPARTS(calendar_year, 1, 1)
+			END AS start_date,
+			CASE 
+				WHEN observation_period_end_date < DATEFROMPARTS(calendar_year + 1, 1, 1) THEN observation_period_end_date
+				ELSE DATEFROMPARTS(calendar_year + 1, 1, 1)
+			END AS end_date
+		FROM (
+			SELECT person_id,
+				DATEADD(DAY, @washout_period, observation_period_start_date) AS observation_period_start_date,
+				observation_period_end_date
+			FROM @cdm_database_schema.observation_period o
+			WHERE DATEADD(DAY, @washout_period, observation_period_start_date) < observation_period_end_date
+		) trunc_op
+		INNER JOIN 	#calendar_years
+			ON YEAR(observation_period_start_date) <= calendar_year
+				AND YEAR(observation_period_end_date) >= calendar_year
+		INNER JOIN @cdm_database_schema.person
+			ON trunc_op.person_id = person.person_id
+		INNER JOIN @cdm_database_schema.visit_occurrence visit 
+		    ON visit.person_id = person.person_id AND YEAR(visit_start_date) = calendar_year  AND visit_concept_id IN  (9203, 9201, 262)-- hosp/ED visit exists in that year
+{@first_occurrence_only} ? {
+		) time_spans_1
+	LEFT JOIN (
+		SELECT subject_id,
+			MIN(cohort_start_date) AS cohort_start_date
+		FROM @cohort_database_schema.@cohort_table
+		WHERE cohort_definition_id = @cohort_id
+		GROUP BY subject_id
+		) cohort
+	ON subject_id = person_id
+		AND cohort_start_date < end_date
+}
+	) time_spans_2
+GROUP BY calendar_year,
+	age_group,
+	gender_concept_id;
+
+
+
 IF OBJECT_ID('tempdb..#rates_summary', 'U') IS NOT NULL
   DROP TABLE #rates_summary;
 
-SELECT denominator.calendar_year,
-	denominator.age_group,
-	concept_name AS gender,
+create table #rates_summary
+(
+calendar_year int,
+calendar_month int,
+age_group int,
+gender varchar(20),
+race varchar(20),
+cohort_count  bigint, -- change to numerator
+person_years bigint,-- change to denominator
+category varchar (50)
+); 
+
+
+INSERT INTO INTO #rates_summary
+-- Absolute numbers (numerator)
+SELECT numerator.calendar_year,
+	numerator.age_group,
+	c.concept_name AS gender,
+--	c2.concept_name as race,
 	CASE 
 		WHEN numerator.cohort_count IS NOT NULL THEN numerator.cohort_count
 		ELSE CAST(0 AS INT)
 	END AS cohort_count,
-	person_years
-INTO #rates_summary
+	null as person_years,
+	'numerator' as category
+FROM #numerator numerator
+INNER JOIN @cdm_database_schema.concept c 
+	ON numerator.gender_concept_id = c.concept_id
+--INNER JOIN @cdm_database_schema.concept c2 
+--	ON numerator.race_concept_id = c2.concept_id	
+;
+
+
+
+INSERT INTO INTO #rates_summary
+-- 2. All pts/any visit/hosp or ED 
+SELECT denominator.calendar_year,
+	denominator.age_group,
+	concept_name AS gender,
+--	c2.concept_name as race,
+	CASE 
+		WHEN numerator.cohort_count IS NOT NULL THEN numerator.cohort_count
+		ELSE CAST(0 AS INT)
+	END AS cohort_count,
+	person_years,
+	denominator.category
 FROM #denominator denominator
-INNER JOIN @cdm_database_schema.concept
-	ON denominator.gender_concept_id = concept_id
+INNER JOIN @cdm_database_schema.concept c 
+	ON denominator.gender_concept_id = c.concept_id
+--INNER JOIN @cdm_database_schema.concept c2 
+--	ON denominator.race_concept_id = c2.concept_id
 LEFT JOIN #numerator numerator
 	ON denominator.calendar_year = numerator.calendar_year
 		AND denominator.age_group = numerator.age_group
 		AND denominator.gender_concept_id = numerator.gender_concept_id;
+
+
+
+
+
+
+
 
 TRUNCATE TABLE #calendar_years;
 DROP TABLE #calendar_years;
