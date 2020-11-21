@@ -290,7 +290,7 @@ INNER JOIN @cdm_database_schema.concept c
 
 
 
-INSERT INTO INTO #rates_summary
+INSERT INTO #rates_summary
 -- 2. All pts/any visit/hosp or ED 
 SELECT denominator.calendar_year,
 	denominator.age_group,
