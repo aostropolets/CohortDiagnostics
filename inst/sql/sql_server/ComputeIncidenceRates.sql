@@ -269,7 +269,7 @@ category varchar (50)
 ); 
 
 
-INSERT INTO INTO #rates_summary
+INSERT INTO #rates_summary
 -- Absolute numbers (numerator)
 SELECT numerator.calendar_year,
 	numerator.age_group,
