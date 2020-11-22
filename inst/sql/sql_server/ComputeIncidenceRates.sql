@@ -259,17 +259,17 @@ IF OBJECT_ID('tempdb..#rates_summary', 'U') IS NOT NULL
 create table #rates_summary
 (
 calendar_year int,
-calendar_month int,
+--calendar_month int,
 age_group int,
 gender varchar(20),
-race varchar(20),
+--race varchar(20),
 cohort_count  bigint, -- change to numerator
 person_years bigint,-- change to denominator
 category varchar (50)
 ); 
 
 
-INSERT INTO INTO #rates_summary
+INSERT INTO #rates_summary
 -- Absolute numbers (numerator)
 SELECT numerator.calendar_year,
 	numerator.age_group,
@@ -290,7 +290,7 @@ INNER JOIN @cdm_database_schema.concept c
 
 
 
-INSERT INTO INTO #rates_summary
+INSERT INTO #rates_summary
 -- 2. All pts/any visit/hosp or ED 
 SELECT denominator.calendar_year,
 	denominator.age_group,
