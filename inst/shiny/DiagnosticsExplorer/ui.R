@@ -198,6 +198,23 @@ sidebarMenu <-
       )
     ),
     shiny::conditionalPanel(
+      condition = "input.tabs=='incidenceRate'",
+      shinyWidgets::pickerInput(
+        inputId = "category",
+        label = "Category",
+        choices = c(""),#category, XXX
+        multiple = FALSE,
+        choicesOpt = list(style = rep_len("color: black;", 999)),
+        options = shinyWidgets::pickerOptions(
+          actionsBox = TRUE,
+          liveSearch = TRUE,
+          size = 10,
+          liveSearchStyle = "contains",
+          liveSearchPlaceholder = "Type here to search",
+          virtualScroll = 50)
+      )
+    ),
+    shiny::conditionalPanel(
       condition = "input.tabs=='compareCohortCharacterization'",
       shinyWidgets::pickerInput(
         inputId = "comparator",

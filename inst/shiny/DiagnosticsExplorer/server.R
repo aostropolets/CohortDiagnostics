@@ -231,6 +231,7 @@ shiny::shinyServer(function(input, output, session) {
     data <- getIncidenceRateResult(dataSource = dataSource,
                                    cohortIds = cohortId(), 
                                    databaseIds = input$databases, 
+                                  # category = input$category,
                                    stratifyByGender =  stratifyByGender,
                                    stratifyByAgeGroup =  stratifyByAge,
                                    stratifyByCalendarYear =  stratifyByCalendarYear,
