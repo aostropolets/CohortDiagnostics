@@ -74,11 +74,11 @@ domain,domain_id,varchar(20),Yes,Yes,No,Yes
 domain,domain_name,varchar(255),Yes,No,No,Yes
 domain,domain_concept_id,int,Yes,No,No,Yes
 incidence_rate,cohort_count,float,Yes,No,No,Yes
-incidence_rate,person_years,float,Yes,No,No,Yes
-incidence_rate,gender,varchar,No,No,No,No
-incidence_rate,age_group,varchar,No,No,No,No
-incidence_rate,calendar_year,varchar(4),No,No,No,No
-incidence_rate,category,varchar(20),No,No,No,No
+incidence_rate,person_years,float,No,No,No,No
+incidence_rate,gender,varchar,No,Yes,No,No
+incidence_rate,age_group,varchar,No,Yes,No,No
+incidence_rate,calendar_year,varchar(4),No,Yes,No,No
+incidence_rate,category,varchar(20),Yes,Yes,No,Yes
 incidence_rate,incidence_rate,float,Yes,No,No,Yes
 incidence_rate,cohort_id,bigint,Yes,Yes,No,Yes
 incidence_rate,database_id,varchar(20),Yes,Yes,No,Yes
