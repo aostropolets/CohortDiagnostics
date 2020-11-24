@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+library(dplyr)
+
 getIncidenceRate <- function(connectionDetails = NULL,
                              connection = NULL,
                              cohortDatabaseSchema,
@@ -82,7 +84,7 @@ getIncidenceRate <- function(connectionDetails = NULL,
                                                              snakeCaseToCamelCase = TRUE) %>% 
     tidyr::tibble()
   
-  write.csv2(ratesSummary, "ir_summary.csv")
+  # write.csv2(ratesSummary, "ir_summary.csv") XXX
   
   sql <- "TRUNCATE TABLE #rates_summary; DROP TABLE #rates_summary;"
   DatabaseConnector::renderTranslateExecuteSql(connection = connection,
@@ -93,19 +95,28 @@ getIncidenceRate <- function(connectionDetails = NULL,
   
   irYearAgeGender <- recode(ratesSummary)
   
-  irOverall <- tidyr::tibble(cohortCount = sum(irYearAgeGender$cohortCount),
-                             personYears = sum(irYearAgeGender$personYears))
-  irGender <- aggregateIr(irYearAgeGender, list(gender = irYearAgeGender$gender))
-  irAge <- aggregateIr(irYearAgeGender, list(ageGroup = irYearAgeGender$ageGroup))
+  irOverall <- 
+    irYearAgeGender %>%
+    group_by(category) %>%
+    summarise(cohortCount = sum(cohortCount),
+              personYears = sum(personYears)) %>%
+    tidyr::tibble() 
+  
+  irGender <- aggregateIr(irYearAgeGender, list(gender = irYearAgeGender$gender,
+                                                category = irYearAgeGender$category))
+  irAge <- aggregateIr(irYearAgeGender, list(ageGroup = irYearAgeGender$ageGroup,
+                                             category = irYearAgeGender$category))
   irAgeGender <- aggregateIr(irYearAgeGender, list(ageGroup = irYearAgeGender$ageGroup,
-                                                   gender = irYearAgeGender$gender))
-  irYear <- aggregateIr(irYearAgeGender, list(calendarYear = irYearAgeGender$calendarYear))
+                                                   gender = irYearAgeGender$gender,
+                                                   category = irYearAgeGender$category))
+  irYear <- aggregateIr(irYearAgeGender, list(calendarYear = irYearAgeGender$calendarYear,
+                                              category = irYearAgeGender$category))
   irYearAge <- aggregateIr(irYearAgeGender, list(calendarYear = irYearAgeGender$calendarYear,
-                                                 ageGroup = irYearAgeGender$ageGroup))
+                                                 ageGroup = irYearAgeGender$ageGroup,
+                                                 category = irYearAgeGender$category))
   irYearGender <- aggregateIr(irYearAgeGender, list(calendarYear = irYearAgeGender$calendarYear,
-                                                    gender = irYearAgeGender$gender))
-  
-  
+                                                    gender = irYearAgeGender$gender,
+                                                    category = irYearAgeGender$category))
   
   result <- dplyr::bind_rows(irOverall,
                              irGender,
@@ -114,7 +125,9 @@ getIncidenceRate <- function(connectionDetails = NULL,
                              irYear,
                              irYearAge,
                              irYearGender,
-                             irYearAgeGender)
+                             irYearAgeGender) %>%
+                   mutate (personYears = case_when(category == "absolute_n" & personYears == 0 ~ 1000)) # to make absolute numbers the same
+  
   result$incidenceRate <- 1000 * result$cohortCount/result$personYears
   result$incidenceRate[is.nan(result$incidenceRate)] <- 0
   delta <- Sys.time() - start

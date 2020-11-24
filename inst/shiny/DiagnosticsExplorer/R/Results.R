@@ -111,6 +111,7 @@ getTimeDistributionResult <- function(dataSource = .GlobalEnv,
 getIncidenceRateResult <- function(dataSource = .GlobalEnv,
                                    cohortIds,
                                    databaseIds,
+                                   categories,
                                    stratifyByGender = c(TRUE,FALSE),
                                    stratifyByAgeGroup = c(TRUE,FALSE),
                                    stratifyByCalendarYear = c(TRUE,FALSE),
@@ -144,6 +145,7 @@ getIncidenceRateResult <- function(dataSource = .GlobalEnv,
                     strataCalendarYear = !is.na(.data$calendarYear)) %>% 
       dplyr::filter(.data$cohortId %in% !!cohortIds &
                       .data$databaseId %in% !!databaseIds &
+                      .data$category %in% !!categories &
                       .data$strataGender %in% !!stratifyByGender &
                       .data$strataAgeGroup %in% !!stratifyByAgeGroup &
                       .data$strataCalendarYear %in% !!stratifyByCalendarYear &
@@ -158,6 +160,7 @@ getIncidenceRateResult <- function(dataSource = .GlobalEnv,
             {@age_group == TRUE} ? {AND age_group != ''} : {  AND age_group = ''}
             {@calendar_year == TRUE} ? {AND calendar_year != ''} : {  AND calendar_year = ''}
               AND person_years > @personYears;"
+    # XXX doesn't include category yet
     data <- renderTranslateQuerySql(connection = dataSource$connection,
                                     sql = sql,
                                     results_database_schema = dataSource$resultsDatabaseSchema,
@@ -177,7 +180,7 @@ getIncidenceRateResult <- function(dataSource = .GlobalEnv,
   
   return(data %>% 
            dplyr::mutate(calendarYear = as.integer(.data$calendarYear)) %>%
-           dplyr::arrange(.data$cohortId, .data$databaseId))
+           dplyr::arrange(.data$cohortId, .data$databaseId, .data$category))
 }
 
 getInclusionRuleStats <- function(dataSource = .GlobalEnv,

@@ -14,7 +14,7 @@ source("R/Results.R")
 
 # Settings when running on server:
 
-defaultLocalDataFolder <- "/Users/aostropolets/Desktop/vaccines/baseline rates" #xxx
+defaultLocalDataFolder <- "/Users/aostropolets/Desktop/vaccines/baseline rates/test" #xxx
 defaultLocalDataFile <- "PreMerged.RData"
 
 connectionPool <- NULL

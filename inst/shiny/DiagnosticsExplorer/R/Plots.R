@@ -95,6 +95,7 @@ plotTimeDistribution <- function(data,
 plotIncidenceRate <- function(data,
                               cohortIds = NULL,
                               databaseIds = NULL,
+                              categories = NULL,
                               stratifyByAgeGroup = TRUE,
                               stratifyByGender = TRUE,
                               stratifyByCalendarYear = TRUE,
@@ -171,6 +172,10 @@ plotIncidenceRate <- function(data,
     plotData <- plotData %>% 
       dplyr::filter(.data$databaseId %in% !!databaseIds)
   }
+  if (!is.null(categories)) {
+    plotData <- plotData %>% 
+      dplyr::filter(.data$category %in% !!categories)
+  }
   plotData <- plotData %>% 
     dplyr::mutate(strataGender = !is.na(.data$gender),
                   strataAgeGroup = !is.na(.data$ageGroup),
@@ -220,6 +225,7 @@ plotIncidenceRate <- function(data,
                               levels = newSort$ageGroup)
   plotData$tooltip <- c(paste0("Incidence Rate = ", scales::comma(plotData$incidenceRate, accuracy = 0.01), 
                                "\nDatabase = ", plotData$databaseId, 
+                               "\nCategory = ", plotData$category, 
                                "\nPerson years = ", scales::comma(plotData$personYears, accuracy = 0.1), 
                                "\nCohort count = ", scales::comma(plotData$cohortCount)))
   
@@ -238,15 +244,12 @@ plotIncidenceRate <- function(data,
   
   plot <- 
     plotData %>%
-    arrange(category) %>%
-    ggplot2::ggplot(data = plotData, 
-                          do.call(ggplot2::aes_string, aesthetics)) +
+    ggplot2::ggplot(data = plotData, mapping = do.call(ggplot2::aes_string, aesthetics)) +
     ggplot2::xlab(xLabel) +
     ggplot2::ylab("Incidence Rate (/1,000 person years)") +
     ggplot2::theme(legend.position = "top",
                    legend.title = ggplot2::element_blank(),
-                   axis.text.x = if (showX) ggplot2::element_text(angle = 90, vjust = 0.5) else ggplot2::element_blank() ) +
-    facet_wrap(~category,  scales = "free")  
+                   axis.text.x = if (showX) ggplot2::element_text(angle = 90, vjust = 0.5) else ggplot2::element_blank() )
   
   if (plotType == "line") {
     plot <- plot + 
@@ -257,7 +260,7 @@ plotIncidenceRate <- function(data,
       ggiraph::geom_col_interactive( ggplot2::aes(tooltip = tooltip), size = 1)
   }
   
-  # databaseId field only present when called in Shiny app:
+  # databaseId field only present when called in Shiny app: XXX
   if (!is.null(data$databaseId) && length(data$databaseId) > 1) {
     if (yscaleFixed) {
       scales <- "fixed"
@@ -285,7 +288,7 @@ plotIncidenceRate <- function(data,
                             ggiraph::opts_sizing(width = .7),
                             ggiraph::opts_zoom(max = 5)),
                           width_svg = 15,
-                          height_svg = 1.5 + 2*length(unique(data$databaseId)))
+                          height_svg = 1.5 + 2*length(unique(data$category)))
   return(plot)
 }
 

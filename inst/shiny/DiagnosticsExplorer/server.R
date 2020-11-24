@@ -231,7 +231,7 @@ shiny::shinyServer(function(input, output, session) {
     data <- getIncidenceRateResult(dataSource = dataSource,
                                    cohortIds = cohortId(), 
                                    databaseIds = input$databases, 
-                                  # category = input$category,
+                                   categories = input$category,
                                    stratifyByGender =  stratifyByGender,
                                    stratifyByAgeGroup =  stratifyByAge,
                                    stratifyByCalendarYear =  stratifyByCalendarYear,
@@ -242,16 +242,18 @@ shiny::shinyServer(function(input, output, session) {
     validate(need(!is.null(data), paste0("No data for this combination")),
              need(nrow(data) > 0, paste0("No data for this combination")))
     
+  
     plot <- plotIncidenceRate(data = data,
                               cohortIds = NULL,
                               databaseIds = NULL,
+                              categories = NULL,
                               stratifyByAgeGroup = stratifyByAge,
                               stratifyByGender = stratifyByGender,
                               stratifyByCalendarYear  = stratifyByCalendarYear,
                               yscaleFixed =   input$irYscaleFixed)
     return(plot)
   })
-  
+
   output$timeDisPlot <- ggiraph::renderggiraph(expr = {
     validate(need(length(input$databases) > 0, "No data sources chosen"))
     data <- getTimeDistributionResult(dataSource = dataSource,
