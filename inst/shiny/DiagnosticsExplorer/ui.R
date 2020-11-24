@@ -202,7 +202,7 @@ sidebarMenu <-
       shinyWidgets::pickerInput(
         inputId = "category",
         label = "Category",
-        choices = c("absolute_n","IR_visit","IR_hosp","IR_all","IP_visit","IP_hosp","IP_all"), #XXX make dynamic
+        choices = c("IR_visit","IR_hosp","IR_all","IP_visit","IP_hosp","IP_all", "absolute_n"), #XXX make dynamic
         multiple = FALSE,
         choicesOpt = list(style = rep_len("color: black;", 999)),
         options = shinyWidgets::pickerOptions(

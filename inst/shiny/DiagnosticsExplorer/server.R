@@ -235,7 +235,7 @@ shiny::shinyServer(function(input, output, session) {
                                    stratifyByGender =  stratifyByGender,
                                    stratifyByAgeGroup =  stratifyByAge,
                                    stratifyByCalendarYear =  stratifyByCalendarYear,
-                                   minPersonYears = 1000) %>% 
+                                   minPersonYears = 999) %>% # changed to 999 as absolute numbers have 1000 as personYears
       dplyr::mutate(incidenceRate = dplyr::case_when(.data$incidenceRate < 0 ~ 0, 
                                                      TRUE ~ .data$incidenceRate))
     
