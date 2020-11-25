@@ -130,7 +130,7 @@ getIncidenceRate <- function(connectionDetails = NULL,
                                                    category == "absolute_n" & personYears != 0 ~ personYears,
                                                    category != "absolute_n" ~ personYears)) # to make absolute numbers the same
   
-  result$cohortCount<-abs(cohortCount) # XXX temporal solution for strange negative cohort counts
+  result$cohortCount<-abs(result$cohortCount) # XXX temporal solution for strange negative cohort counts
   result$incidenceRate <- 1000 * result$cohortCount/result$personYears
   result$incidenceRate[is.nan(result$incidenceRate)] <- 0
   delta <- Sys.time() - start
